@@ -2,7 +2,12 @@
 FROM rust:1.93.1 as builder
 WORKDIR /usr/src/parseltongue
 COPY . .
-RUN cargo build --release --bin parseltongue
+RUN apt-get update \
+  && apt-get install -y build-essential clang libclang-dev pkg-config libssl-dev unzip ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# Build all binaries (parseltongue, parseltongue-mcp, etc.)
+RUN cargo build --release --bins
 
 # Runtime image
 FROM debian:bookworm-slim
