@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.70 as builder
+FROM rust:1.93.1 as builder
 WORKDIR /usr/src/parseltongue
 COPY . .
 RUN cargo build --release --bin parseltongue
