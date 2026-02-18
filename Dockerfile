@@ -11,8 +11,7 @@ WORKDIR /app
 COPY --from=builder /usr/src/parseltongue/target/release/parseltongue /usr/local/bin/parseltongue
 COPY --from=builder /usr/src/parseltongue/target/release/parseltongue-mcp /usr/local/bin/parseltongue-mcp
 
-# Create data and uploads directories (mounted as volumes at runtime)
+# Create data and uploads directories (mounted at runtime by platform)
 RUN mkdir -p /data /uploads
-VOLUME ["/data"]
 EXPOSE 7777
 ENTRYPOINT ["/usr/local/bin/parseltongue"]
