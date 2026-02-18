@@ -11,7 +11,7 @@ RUN cargo build --release --bins
 
 # Runtime image
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y ca-certificates unzip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates unzip libsqlite3-0 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /usr/src/parseltongue/target/release/parseltongue /usr/local/bin/parseltongue
 COPY --from=builder /usr/src/parseltongue/target/release/parseltongue-mcp /usr/local/bin/parseltongue-mcp
