@@ -4,7 +4,8 @@
 //! under `/data/uploads/` with a timestamped filename. Returns the saved path.
 //! Note: ingestion (pt01) can be run separately against the extracted folder.
 use axum::{
-    extract::{State, Body},
+    extract::State,
+    body::Bytes,
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -27,22 +28,13 @@ struct UploadResponse {
 
 pub async fn handle_upload_codebase_zip(
     State(state): State<SharedApplicationStateContainer>,
-    body: Body,
+    body: Bytes,
 ) -> impl IntoResponse {
     // update last request timestamp
     state.update_last_request_timestamp().await;
 
-    // read body bytes
-    let bytes = match hyper::body::to_bytes(body).await {
-        Ok(b) => b,
-        Err(e) => {
-            return (StatusCode::BAD_REQUEST, Json(UploadResponse {
-                success: false,
-                message: format!("Failed to read body: {}", e),
-                saved_path: "".to_string(),
-            }));
-        }
-    };
+    // body is already collected bytes
+    let bytes = body;
 
     // ensure uploads dir
     let uploads_dir = PathBuf::from("/data/uploads");

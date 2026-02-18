@@ -75,13 +75,14 @@ async fn get(
 ) -> Result<Value> {
     let url = format!("{}{}", base_url, path);
     let resp = client.get(&url).query(params).send().await?;
-    let body: Value = resp.json().await.unwrap_or(json!({ "raw_status": resp.status().as_u16() }));
+    let status = resp.status();
+    let body: Value = resp.json().await.unwrap_or(json!({ "raw_status": status.as_u16() }));
     Ok(body)
 }
 
 // Simplified tool dispatch - only health and stats supported in the minimal binary
-async fn call_tool(client: &Client, base_url: &str, name: &str, args: &Value) -> Result<Value> {
-    let mut p: HashMap<String, String> = HashMap::new();
+async fn call_tool(client: &Client, base_url: &str, name: &str, _args: &Value) -> Result<Value> {
+    let p: HashMap<String, String> = HashMap::new();
     match name {
         "pt_health_check" => get(client, base_url, "/server-health-check-status", &p).await?,
         "pt_codebase_stats" => get(client, base_url, "/codebase-statistics-overview-summary", &p).await?,
