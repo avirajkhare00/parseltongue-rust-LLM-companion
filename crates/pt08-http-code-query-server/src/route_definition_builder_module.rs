@@ -39,6 +39,7 @@ use crate::http_endpoint_handler_modules::{
     // v1.6.5: Diagnostics and folder discovery
     ingestion_diagnostics_coverage_handler,
     folder_structure_discovery_handler,
+    upload_codebase_handler,
 };
 
 /// Build the complete router with all endpoints
@@ -134,6 +135,11 @@ pub fn build_complete_router_instance(state: SharedApplicationStateContainer) ->
         .route(
             "/incremental-reindex-file-update",
             post(incremental_reindex_file_handler::handle_incremental_reindex_file_request)
+        )
+        // Upload codebase zip (saves to /data/uploads)
+        .route(
+            "/upload-codebase-zip",
+            post(upload_codebase_handler::handle_upload_codebase_zip)
         )
         // File watcher status endpoint (PRD-2026-01-29)
         .route(
