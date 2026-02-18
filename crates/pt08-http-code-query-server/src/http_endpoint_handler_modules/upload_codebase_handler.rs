@@ -94,85 +94,16 @@ pub async fn handle_upload_codebase_zip(
         }));
     }
 
-    // Run ingestion (pt01) with working dir = /data so the timestampped workspace lands in /data
-    let ingest_cmd = Command::new("/usr/local/bin/parseltongue")
-        .arg("pt01-folder-to-cozodb-streamer")
-        .arg(extract_dir.to_string_lossy().to_string())
-        .current_dir("/data")
-        .output()
-        .await;
-
-    if let Err(e) = ingest_cmd {
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(UploadResponse {
-            success: false,
-            message: format!("Failed to run ingestion command: {}", e),
-            saved_path: saved_path.to_string_lossy().to_string(),
-        }));
-    }
-
-    let out = ingest_cmd.unwrap();
-    if !out.status.success() {
-        let stderr = String::from_utf8_lossy(&out.stderr);
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(UploadResponse {
-            success: false,
-            message: format!("Ingestion failed: {}", stderr),
-            saved_path: saved_path.to_string_lossy().to_string(),
-        }));
-    }
-
-    // Find the most recent parseltongue* directory under /data (the created workspace)
-    let mut newest: Option<(PathBuf, SystemTime)> = None;
-    match fs::read_dir("/data").await {
-        Ok(mut rd) => {
-            while let Ok(Some(entry)) = rd.next_entry().await {
-                let file_name = entry.file_name();
-                let fname = file_name.to_string_lossy().to_string();
-                if fname.starts_with("parseltongue") {
-                    if let Ok(meta) = entry.metadata().await {
-                        if let Ok(mtime) = meta.modified() {
-                            match &newest {
-                                Some((_, t)) if *t >= mtime => {},
-                                _ => newest = Some((entry.path(), mtime)),
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Err(_) => {}
-    }
-
-    let mut db_path = "".to_string();
-    if let Some((pathbuf, _)) = newest {
-        // create/update /data/current symlink to point to this workspace
-        let current_link = PathBuf::from("/data/current");
-        let _ = fs::remove_file(&current_link).await; // ignore error if not exist
-        // create symlink (std::os::unix)
-        if let Err(e) = unix_fs::symlink(&pathbuf, &current_link) {
-            // non-fatal; include in response message
-            db_path = pathbuf.to_string_lossy().to_string();
-            return (StatusCode::OK, Json(UploadResponse {
-                success: true,
-                message: format!("Uploaded and ingested OK, but failed to create /data/current symlink: {}", e),
-                saved_path: saved_path.to_string_lossy().to_string(),
-            }));
-        } else {
-            db_path = current_link.join("analysis.db").to_string_lossy().to_string();
-        }
-    } else {
-        return (StatusCode::INTERNAL_SERVER_ERROR, Json(UploadResponse {
-            success: false,
-            message: "Ingestion completed but workspace not found under /data".to_string(),
-            saved_path: saved_path.to_string_lossy().to_string(),
-        }));
-    }
-
+    // Do not run ingestion inside the server (not feasible on some platforms).
+    // The handler only saves and extracts the uploaded archive. Ingestion should be
+    // run as a separate one-off process that writes a workspace under /data.
     let saved_path_str = saved_path.to_string_lossy().to_string();
+    let extract_path_str = extract_dir.to_string_lossy().to_string();
     (
         StatusCode::OK,
         Json(UploadResponse {
             success: true,
-            message: format!("Uploaded zip saved and ingested successfully. DB path: {}", db_path),
+            message: format!("Uploaded and extracted successfully. Extracted path: {}", extract_path_str),
             saved_path: saved_path_str,
         }),
     )

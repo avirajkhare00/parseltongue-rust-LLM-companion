@@ -2,7 +2,7 @@ services:
   server:
     build: .
     image: parseltongue:latest
-    command: ["parseltongue", "pt08-http-code-query-server", "--db", "rocksdb:/data/current/analysis.db", "--port", "7777"]
+    command: ["pt08-http-code-query-server", "--db", "rocksdb:/data/current/analysis.db", "--port", "7777"]
     ports:
       - "7777:7777"
     volumes:
@@ -12,7 +12,7 @@ services:
   mcp:
     build: .
     image: parseltongue:latest
-    command: ["parseltongue-mcp"]
+    entrypoint: ["/usr/local/bin/parseltongue-mcp"]
     environment:
       - PARSELTONGUE_BASE_URL=http://server:7777
     depends_on:
